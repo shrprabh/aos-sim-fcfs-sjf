@@ -1,0 +1,77 @@
+// JobTable.tsx
+import React, { useState } from 'react';
+
+interface Job {
+  [key: string]: string | number; // Adding index signature to allow any string key with string or number value
+}
+
+interface Props {
+  numJobs: number;
+  onSubmit: (jobs: Job[]) => void;
+}
+
+const JobTable: React.FC<Props> = ({ numJobs, onSubmit }) => {
+  const [jobs, setJobs] = useState<Job[]>([]);
+
+  const handleInputChange = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    const newJobs = [...jobs];
+    newJobs[index][name] = value; // TypeScript error may still arise here due to assigning string to number field
+    setJobs(newJobs);
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onSubmit(jobs);
+  };
+
+  return (
+    <div>
+      <form onSubmit={handleSubmit}>
+        <table>
+          <thead>
+            <tr>
+              <th>Job</th>
+              <th>Arrival Time</th>
+              <th>Burst Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: numJobs }, (_, index) => (
+              <tr key={index}>
+                <td>
+                  <input
+                    type="text"
+                    name="job"
+                    onChange={(event) => handleInputChange(index, event)}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    name="arrivalTime"
+                    onChange={(event) => handleInputChange(index, event)}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    name="burstTime"
+                    onChange={(event) => handleInputChange(index, event)}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <label>
+          Number of Computers:
+          <input type="number" name="numComputers" />
+        </label>
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+  );
+};
+
+export default JobTable;
