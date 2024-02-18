@@ -1,78 +1,55 @@
 import React, { useState, useEffect, useRef } from 'react';
 import JobTable from './JobTable';
-import Chart, { ChartType } from 'chart.js/auto';
+import Chart, { ChartType, ChartData, ChartDataset } from 'chart.js/auto';
 
 const SJFPage: React.FC = () => {
   const [jobResults, setJobResults] = useState<any[]>([]);
-  const [averageWaitingTime, setAverageWaitingTime] = useState<number | null>(null);
-  const [averageTurnaroundTime, setAverageTurnaroundTime] = useState<number | null>(null);
   const chartRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (jobResults.length > 0) {
       renderGanttChart(jobResults);
-      calculateAverages(jobResults);
     }
   }, [jobResults]);
 
-  const handleSubmit = (jobs: any[]) => {
-    // Sort jobs based on arrival time
-    jobs.sort((a, b) => parseInt(a.arrivalTime) - parseInt(b.arrivalTime));
+  const handleSubmit = (jobs: any[], numComputers: number) => {
+    // Calculate job results using SJF algorithm
+    const results = calculateJobResults(jobs, numComputers);
+    setJobResults(results);
+  };
 
-    let currentTime = 0;
-    let totalWaitingTime = 0;
+  const calculateJobResults = (jobs: any[], numComputers: number) => {
     let totalTurnaroundTime = 0;
-    const completedProcesses: any[] = [];
+    const results: any[] = [];
+    const currentTimes: number[] = new Array(numComputers).fill(0);
+
+    jobs.sort((a, b) => parseInt(a.burstTime, 10) - parseInt(b.burstTime, 10));
 
     for (const job of jobs) {
-      // Skip to the next process if it hasn't arrived yet
-      if (parseInt(job.arrivalTime) > currentTime) {
-        currentTime = parseInt(job.arrivalTime);
-      }
+      let nextAvailableCPU = currentTimes.indexOf(Math.min(...currentTimes));
 
-      // Calculate waiting time
-      const waitingTime = currentTime - parseInt(job.arrivalTime);
-      totalWaitingTime += waitingTime;
+      const startTime = Math.max(job.arrivalTime, currentTimes[nextAvailableCPU]);
+      const endTime = startTime + parseInt(job.burstTime, 10);
+      const turnaroundTime = endTime - parseInt(job.arrivalTime, 10);
 
-      // Execute the process
-      currentTime += parseInt(job.burstTime);
-
-      // Calculate turnaround time (using original burst time)
-      const turnaroundTime = currentTime - parseInt(job.arrivalTime) - parseInt(job.burstTime);
       totalTurnaroundTime += turnaroundTime;
 
-      // Add process to completed list
-      completedProcesses.push({
+      currentTimes[nextAvailableCPU] = endTime;
+
+      results.push({
         ...job,
-        completionTime: currentTime,
-        waitingTime,
+        startTime,
+        endTime,
         turnaroundTime,
+        cpu: nextAvailableCPU,
       });
     }
 
-    // Set state
-    setJobResults(completedProcesses);
-  };
-
-  const calculateAverages = (results: any[]) => {
-    const numProcesses = results.length;
-    let totalWaitingTime = 0;
-    let totalTurnaroundTime = 0;
-
-    for (const result of results) {
-      totalWaitingTime += result.waitingTime;
-      totalTurnaroundTime += result.turnaroundTime;
-    }
-
-    const avgWaitingTime = totalWaitingTime / numProcesses;
-    const avgTurnaroundTime = totalTurnaroundTime / numProcesses;
-
-    // Set state
-    setAverageWaitingTime(avgWaitingTime);
-    setAverageTurnaroundTime(avgTurnaroundTime);
+    return results;
   };
 
   const renderGanttChart = (results: any[]) => {
+    const numComputers = Math.max(1, Math.max(...results.map(job => job.cpu)) + 1);
     const colors = [
       'rgba(75, 192, 192, 1)',
       'rgba(255, 99, 132, 1)',
@@ -82,38 +59,32 @@ const SJFPage: React.FC = () => {
       'rgba(255, 206, 86, 1)',
     ];
 
-    const datasets: any[] = [];
+    const datasets: ChartDataset[] = [];
 
-    // Create a dataset for each job with a unique color
     results.forEach((job, index) => {
-      const colorIndex = index % colors.length; // Get color index cyclically
+      const colorIndex = index % colors.length;
       const color = colors[colorIndex];
       datasets.push({
-        label: job.job,
+        label: `Job ${job.job}`,
         borderColor: color,
-        backgroundColor: color,
-        borderWidth: 1,
-        data: [{
-          x: parseInt(job.arrivalTime),
-          y: index + 1
-        }, {
-          x: job.completionTime,
-          y: index + 1
-        }],
+        borderWidth: 2,
+        data: [{ x: job.startTime, y: job.cpu }, { x: job.endTime, y: job.cpu }],
+        fill: false,
       });
     });
+
+    const data: ChartData = {
+      datasets: datasets,
+    };
 
     const ctx = chartRef.current;
 
     if (ctx) {
-      // Destroy the previous chart if it exists
       Chart.getChart(ctx)?.destroy();
 
       new Chart(ctx, {
         type: 'line' as ChartType,
-        data: {
-          datasets: datasets,
-        },
+        data: data,
         options: {
           scales: {
             x: {
@@ -121,9 +92,14 @@ const SJFPage: React.FC = () => {
               position: 'bottom',
             },
             y: {
-              type: 'category',
+              type: 'linear',
               position: 'left',
-              labels: results.map((job, index) => job.job),
+              min: -1,
+              max: numComputers,
+              ticks: {
+                stepSize: 1,
+                callback: (value: any) => `CPU ${value + 1}`,
+              },
             },
           },
         },
@@ -132,10 +108,18 @@ const SJFPage: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', gap: '20px' }}>
-      <div>
+    <div style={{ display: 'flex' }}>
+      <div style={{ flex: 1 }}>
         <h2>Shortest Job First (SJF)</h2>
         <JobTable onSubmit={handleSubmit} />
+      </div>
+      <div style={{ flex: 1 }}>
+        {jobResults.length > 0 && (
+          <div>
+            <h3>Gantt Chart</h3>
+            <canvas id="ganttChart" ref={chartRef} />
+          </div>
+        )}
         {jobResults.length > 0 && (
           <div className="results-table">
             <h3>Job Results</h3>
@@ -145,8 +129,8 @@ const SJFPage: React.FC = () => {
                   <th>Job</th>
                   <th>Arrival Time</th>
                   <th>Burst Time</th>
-                  <th>Completion Time</th>
-                  <th>Waiting Time</th>
+                  <th>Start Time</th>
+                  <th>End Time</th>
                   <th>Turnaround Time</th>
                 </tr>
               </thead>
@@ -154,23 +138,18 @@ const SJFPage: React.FC = () => {
                 {jobResults.map((result, index) => (
                   <tr key={index}>
                     <td>{result.job}</td>
-                    <td>{parseInt(result.arrivalTime)}</td>
+                    <td>{result.arrivalTime}</td>
                     <td>{result.burstTime}</td>
-                    <td>{result.completionTime}</td>
-                    <td>{result.waitingTime}</td>
+                    <td>{result.startTime}</td>
+                    <td>{result.endTime}</td>
                     <td>{result.turnaroundTime}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <p>Average Waiting Time: {averageWaitingTime}</p>
-            <p>Average Turnaround Time: {averageTurnaroundTime}</p>
+            {/* <p>Average Turnaround Time: {turnaroundTimeAverage}</p> */}
           </div>
         )}
-      </div>
-      <div>
-        <h3>Gantt Chart</h3>
-        <canvas id="ganttChart" ref={chartRef}></canvas>
       </div>
     </div>
   );
