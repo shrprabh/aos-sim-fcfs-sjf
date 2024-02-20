@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import JobTable from './JobTable';
-import Chart, { ChartType, ChartData, ChartDataset } from 'chart.js/auto';
+import Chart, { ChartType } from 'chart.js/auto';
 
 const SJFPage: React.FC = () => {
   const [jobResults, setJobResults] = useState<any[]>([]);
+  const [turnaroundTimeAverage, setTurnaroundTimeAverage] = useState<number | null>(null);
   const chartRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -14,40 +15,64 @@ const SJFPage: React.FC = () => {
 
   const handleSubmit = (jobs: any[], numComputers: number) => {
     // Calculate job results using SJF algorithm
-    const results = calculateJobResults(jobs, numComputers);
-    setJobResults(results);
+    calculateJobResults(jobs, numComputers);
   };
 
   const calculateJobResults = (jobs: any[], numComputers: number) => {
     let totalTurnaroundTime = 0;
     const results: any[] = [];
     const currentTimes: number[] = new Array(numComputers).fill(0);
+    const waitingJobs: any[] = [];
 
-    jobs.sort((a, b) => parseInt(a.burstTime, 10) - parseInt(b.burstTime, 10));
+    // Sort jobs based on arrival time initially
+    jobs.sort((a, b) => a.arrivalTime - b.arrivalTime);
 
-    for (const job of jobs) {
-      let nextAvailableCPU = currentTimes.indexOf(Math.min(...currentTimes));
+    while (jobs.length > 0 || waitingJobs.length > 0) {
+      // Move jobs to waiting queue if they have arrived
+      while (jobs.length > 0 && jobs[0].arrivalTime <= Math.min(...currentTimes)) {
+        waitingJobs.push(jobs.shift());
+      }
 
-      const startTime = Math.max(job.arrivalTime, currentTimes[nextAvailableCPU]);
-      const endTime = startTime + parseInt(job.burstTime, 10);
-      const turnaroundTime = endTime - parseInt(job.arrivalTime, 10);
+      // Sort waiting jobs based on burst time for SJF
+      waitingJobs.sort((a, b) => parseInt(a.burstTime, 10) - parseInt(b.burstTime, 10));
 
-      totalTurnaroundTime += turnaroundTime;
+      if (waitingJobs.length > 0) {
+        for (let cpu = 0; cpu < numComputers && waitingJobs.length > 0; cpu++) {
+          if (currentTimes[cpu] <= Math.min(...currentTimes)) {
+            const job = waitingJobs.shift(); // Get the shortest job
+            const startTime = Math.max(job.arrivalTime, currentTimes[cpu]);
+            const endTime = startTime + parseInt(job.burstTime, 10);
+            const turnaroundTime = endTime - parseInt(job.arrivalTime, 10);
 
-      currentTimes[nextAvailableCPU] = endTime;
+            totalTurnaroundTime += turnaroundTime;
+            currentTimes[cpu] = endTime;
 
-      results.push({
-        ...job,
-        startTime,
-        endTime,
-        turnaroundTime,
-        cpu: nextAvailableCPU,
-      });
+            results.push({
+              ...job,
+              startTime,
+              endTime,
+              turnaroundTime,
+              cpu,
+            });
+          }
+        }
+      } else {
+        // No job is ready to be executed; advance time to next job arrival
+        const nextArrivalTime = jobs.length > 0 ? jobs[0].arrivalTime : Number.MAX_SAFE_INTEGER;
+        const minCurrentTime = Math.min(...currentTimes);
+        if (nextArrivalTime > minCurrentTime) {
+          const nextCPU = currentTimes.indexOf(minCurrentTime);
+          currentTimes[nextCPU] = nextArrivalTime;
+        }
+      }
     }
 
-    return results;
+    const averageTurnaroundTime = totalTurnaroundTime / results.length;
+    setTurnaroundTimeAverage(averageTurnaroundTime);
+    setJobResults(results);
   };
 
+  // The renderGanttChart function remains the same as in your FCFSPage component
   const renderGanttChart = (results: any[]) => {
     const numComputers = Math.max(1, Math.max(...results.map(job => job.cpu)) + 1);
     const colors = [
@@ -59,13 +84,14 @@ const SJFPage: React.FC = () => {
       'rgba(255, 206, 86, 1)',
     ];
 
-    const datasets: ChartDataset[] = [];
+    const datasets: any[] = [];
 
+    // Create a dataset for each job with a unique color
     results.forEach((job, index) => {
-      const colorIndex = index % colors.length;
+      const colorIndex = index % colors.length; // Get color index cyclically
       const color = colors[colorIndex];
       datasets.push({
-        label: `Job ${job.job}`,
+        label: job.job,
         borderColor: color,
         borderWidth: 2,
         data: [{ x: job.startTime, y: job.cpu }, { x: job.endTime, y: job.cpu }],
@@ -73,18 +99,17 @@ const SJFPage: React.FC = () => {
       });
     });
 
-    const data: ChartData = {
-      datasets: datasets,
-    };
-
     const ctx = chartRef.current;
 
     if (ctx) {
+      // Destroy the previous chart if it exists
       Chart.getChart(ctx)?.destroy();
 
       new Chart(ctx, {
         type: 'line' as ChartType,
-        data: data,
+        data: {
+          datasets: datasets,
+        },
         options: {
           scales: {
             x: {
@@ -95,9 +120,9 @@ const SJFPage: React.FC = () => {
               type: 'linear',
               position: 'left',
               min: -1,
-              max: numComputers,
+              max: numComputers , // Ensure maximum y-axis range is correct
               ticks: {
-                stepSize: 1,
+                stepSize: 1, // Set step size to 1
                 callback: (value: any) => `CPU ${value + 1}`,
               },
             },
@@ -106,7 +131,6 @@ const SJFPage: React.FC = () => {
       });
     }
   };
-
   return (
     <div style={{ display: 'flex' }}>
       <div style={{ flex: 1 }}>
@@ -147,7 +171,7 @@ const SJFPage: React.FC = () => {
                 ))}
               </tbody>
             </table>
-            {/* <p>Average Turnaround Time: {turnaroundTimeAverage}</p> */}
+            <p>Average Turnaround Time: {turnaroundTimeAverage}</p>
           </div>
         )}
       </div>
