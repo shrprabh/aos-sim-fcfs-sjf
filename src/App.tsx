@@ -1,7 +1,7 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Link,Routes } from 'react-router-dom';
-import FCFSPage from "./components/FSFSpage"; // Make sure the exported component name is FCFSPage in FSFSpage.tsx
-import SJFPage from "./components/SJFpage"; // Make sure the exported component name is SJFPage in SJFpage.tsx
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import FCFSPage from "./components/FSFSpage"; // Corrected the file name based on your comment
+import SJFPage from "./components/SJFpage";
 
 const App: React.FC = () => {
   return (
@@ -20,8 +20,8 @@ const App: React.FC = () => {
         </nav>
 
         <Routes>
-          <Route path="/fcfs" Component={FCFSPage} />
-          <Route path="/sjf" Component={SJFPage} />
+          <Route path="/fcfs" element={<FCFSPage />} />
+          <Route path="/sjf" element={<SJFPage />} />
         </Routes>
       </div>
     </Router>

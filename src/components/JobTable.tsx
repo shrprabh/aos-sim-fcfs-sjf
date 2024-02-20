@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 interface Job {
-  [key: string]: string | number;
+  id: number;
+  job: string;
+  arrivalTime: number;
+  burstTime: number;
 }
 
 interface Props {
@@ -9,137 +12,84 @@ interface Props {
 }
 
 const JobTable: React.FC<Props> = ({ onSubmit }) => {
-  const [numJobs, setNumJobs] = useState<number>(0);
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([{ id: 1, job: 'Job 1', arrivalTime: 0, burstTime: 0 }]);
   const [numComputers, setNumComputers] = useState<number>(1);
-  const [isFormValid, setIsFormValid] = useState<boolean>(false);
-  const [numJobsError, setNumJobsError] = useState<string | null>(null);
-  const [numComputersError, setNumComputersError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setIsFormValid(validateForm());
-  }, [numJobs, jobs, numComputers]);
-
-  const validateForm = () => {
-    // Check if any job fields are empty
-    for (let i = 0; i < numJobs; i++) {
-      if (
-        !jobs[i]?.job ||
-        !jobs[i]?.arrivalTime ||
-        !jobs[i]?.burstTime ||
-        jobs[i]?.job === '' ||
-        isNaN(Number(jobs[i]?.arrivalTime)) ||
-        isNaN(Number(jobs[i]?.burstTime))
-      ) {
-        return false;
-      }
-    }
-    // Check if number of computers is valid
-    return numComputers >= 1;
+  const addJob = () => {
+    const newId = jobs.length > 0 ? jobs[jobs.length - 1].id + 1 : 1;
+    setJobs(prevJobs => [...prevJobs, { id: newId, job: `Job ${newId}`, arrivalTime: 0, burstTime: 0 }]);
   };
 
-  const handleInputChange = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = event.target;
-    const newJobs = [...jobs];
-    if (!newJobs[index]) {
-      newJobs[index] = {};
-    }
-    newJobs[index][name as keyof Job] = value;
-    setJobs(newJobs);
+  const removeJob = (id: number) => {
+    setJobs(prevJobs => prevJobs.filter(job => job.id !== id));
+  };
+
+  const handleInputChange = (id: number, field: keyof Job, value: string) => {
+    setJobs(prevJobs => prevJobs.map(job => job.id === id ? { ...job, [field]: field === 'job' ? value : parseInt(value, 10) } : job));
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSubmit(jobs, numComputers);
-  };
-
-  const handleNumJobsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(event.target.value);
-    if (!isNaN(value)) {
-      if (value < 1) {
-        setNumJobs(1);
-      } else if (value > 100) {
-        setNumJobsError('Number of jobs cannot exceed 100');
-      } else {
-        setNumJobs(value);
-        setNumJobsError(null);
-      }
-    } else {
-      // Handle case where input value cannot be parsed into a number
-      setNumJobsError('Please enter a valid number');
-    }
-  };
-
-  const handleNumComputersChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    let value = parseInt(event.target.value);
-    if (isNaN(value) || value < 1) {
-      // If the parsed value is NaN or less than 1, set it to 1
-      value = 1;
-      // Set error message
-      setNumComputersError('Number of computers cannot be less than 1.');
-    } else if (value > 100) {
-      // If the value exceeds 100, set it to 100
-      value = 100;
-      // Set error message
-      setNumComputersError('Number of computers cannot exceed 100.');
-    } else {
-      // Clear error message if value is valid
-      setNumComputersError(null);
-    }
-    setNumComputers(value);
+    // Preserves the state, allowing for new submissions without resetting
   };
 
   return (
     <div>
       <form onSubmit={handleSubmit}>
-        <label>
-          Number of Jobs:
+        <div>
+          <button type="button" onClick={addJob}>Add Job</button>
+        </div>
+        <div>
+          Number of Computers:
           <input
             type="number"
-            value={numJobs}
-            onChange={handleNumJobsChange}
+            value={numComputers}
+            onChange={e => setNumComputers(Math.max(1, parseInt(e.target.value, 10)))}
             min={1}
-            max={100}
-            style={{ borderColor: numJobsError ? 'red' : undefined }}
           />
-          {numJobsError && <span style={{ color: 'red' }}>{numJobsError}</span>}
-        </label>
-        {numJobs > 0 && (
-          <>
-            <table>
-              <thead>
-                <tr>
-                  <th>Job</th>
-                  <th>Arrival Time</th>
-                  <th>Burst Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({ length: numJobs }, (_, index) => (
-                  <tr key={index}>
-                    <td>
-                      <input type="text" name="job" onChange={(event) => handleInputChange(index, event)} />
-                    </td>
-                    <td>
-                      <input type="number" name="arrivalTime" onChange={(event) => handleInputChange(index, event)} />
-                    </td>
-                    <td>
-                      <input type="number" name="burstTime" onChange={(event) => handleInputChange(index, event)} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <label>
-              Number of Computers:
-              <input type="number" value={numComputers} onChange={handleNumComputersChange} />
-              {numComputersError && <span style={{ color: 'red' }}>{numComputersError}</span>}
-            </label>
-            <button type="submit" disabled={!isFormValid}>
-              Submit
-            </button>
-          </>
-        )}
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Job Name</th>
+              <th>Arrival Time</th>
+              <th>Burst Time</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {jobs.map((job, index) => (
+              <tr key={index}>
+                <td>
+                  <input
+                    type="text"
+                    value={job.job}
+                    onChange={e => handleInputChange(job.id, 'job', e.target.value)}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    value={job.arrivalTime}
+                    onChange={e => handleInputChange(job.id, 'arrivalTime', e.target.value)}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    value={job.burstTime}
+                    onChange={e => handleInputChange(job.id, 'burstTime', e.target.value)}
+                  />
+                </td>
+                <td>
+                  <button type="button" onClick={() => removeJob(job.id)}>Remove</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <button type="submit">Submit</button>
       </form>
     </div>
   );
