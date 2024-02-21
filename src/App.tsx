@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import FCFSPage from "./components/FSFSpage"; // Corrected the file name based on your comment
 import SJFPage from "./components/SJFpage";
 
