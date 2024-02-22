@@ -30,10 +30,13 @@ const JobTable: React.FC<Props> = ({ onSubmit }) => {
   };
 
   const handleInputChange = (id: number, field: keyof Job, value: string) => {
+    // Parse the input value and ensure it is not negative
+    const parsedValue = Math.max(parseInt(value, 10), 0);
+  
     setJobs((prevJobs) =>
       prevJobs.map((job) =>
         job.id === id
-          ? { ...job, [field]: field === "job" ? value : parseInt(value, 10) }
+          ? { ...job, [field]: field === "job" ? value : parsedValue }
           : job
       )
     );
