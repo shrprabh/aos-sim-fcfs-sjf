@@ -132,6 +132,15 @@ const SJFPage: React.FC = () => {
       });
     }
   };
+  const downloadChart = () => {
+    if (chartRef.current) {
+      const url = chartRef.current.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = 'gantt-chart.png';
+      link.href = url;
+      link.click();
+    }
+  };
   return (
     <div className="container my-4">
       <div className="row justify-content-center">
@@ -141,7 +150,10 @@ const SJFPage: React.FC = () => {
           {jobResults.length > 0 && (
             <>
               <h3 className="mt-3">Gantt Chart</h3>
-              <canvas id="ganttChart" ref={chartRef} />
+              <div style={{ overflowX: 'auto' }}> {/* Make chart scrollable */}
+                <canvas id="ganttChart" ref={chartRef} />
+              </div>
+              <button className="btn btn-primary btn-white-text mt-3" onClick={downloadChart}>Download Chart</button>
               <div className="results-table mt-4">
                 <h3>Job Results</h3>
                 <table className="table table-striped">
