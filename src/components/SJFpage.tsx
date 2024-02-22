@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import JobTable from './JobTable';
 import Chart, { ChartType } from 'chart.js/auto';
+import 'bootstrap/dist/css/bootstrap.min.css'; // Ensure Bootstrap CSS is imported
 
 const SJFPage: React.FC = () => {
   const [jobResults, setJobResults] = useState<any[]>([]);
@@ -132,48 +133,56 @@ const SJFPage: React.FC = () => {
     }
   };
   return (
-    <div style={{ display: 'flex' }}>
-      <div style={{ flex: 1 }}>
-        <h2>Shortest Job First (SJF)</h2>
-        <JobTable onSubmit={handleSubmit} />
+    <div className="container my-4">
+      <div className="row">
+        <div className="col-12">
+          <h2 className="text-center mb-4">Shortest Job First (SJF)</h2>
+        </div>
       </div>
-      <div style={{ flex: 1 }}>
-        {jobResults.length > 0 && (
-          <div>
-            <h3>Gantt Chart</h3>
-            <canvas id="ganttChart" ref={chartRef} />
-          </div>
-        )}
-        {jobResults.length > 0 && (
-          <div className="results-table">
-            <h3>Job Results</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Job</th>
-                  <th>Arrival Time</th>
-                  <th>Burst Time</th>
-                  <th>Start Time</th>
-                  <th>End Time</th>
-                  <th>Turnaround Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {jobResults.map((result, index) => (
-                  <tr key={index}>
-                    <td>{result.job}</td>
-                    <td>{result.arrivalTime}</td>
-                    <td>{result.burstTime}</td>
-                    <td>{result.startTime}</td>
-                    <td>{result.endTime}</td>
-                    <td>{result.turnaroundTime}</td>
+      <div className="row">
+        <div className="col-lg-6">
+          <JobTable onSubmit={handleSubmit} />
+        </div>
+        <div className="col-lg-6">
+          {jobResults.length > 0 && (
+            <>
+              <h3>Gantt Chart</h3>
+              <div>
+                <canvas id="ganttChart" ref={chartRef} />
+              </div>
+            </>
+          )}
+          {jobResults.length > 0 && (
+            <div className="results-table mt-4">
+              <h3>Job Results</h3>
+              <table className="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Job</th>
+                    <th>Arrival Time</th>
+                    <th>Burst Time</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Turnaround Time</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            <p>Average Turnaround Time: {turnaroundTimeAverage}</p>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {jobResults.map((result, index) => (
+                    <tr key={index}>
+                      <td>{result.job}</td>
+                      <td>{result.arrivalTime}</td>
+                      <td>{result.burstTime}</td>
+                      <td>{result.startTime}</td>
+                      <td>{result.endTime}</td>
+                      <td>{result.turnaroundTime}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p>Average Turnaround Time: {turnaroundTimeAverage}</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
