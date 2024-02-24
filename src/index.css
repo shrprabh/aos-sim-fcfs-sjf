@@ -73,3 +73,15 @@ h1, h2, h3 {
   color: #fff !important; /* Ensures text color is white */
 }
 
+
+.footer {
+  padding: 20px 0;
+  background-color: #f8f9fa; /* A light gray background that fits Bootstrap's default styling */
+  border-top: 1px solid #e9ecef; /* A subtle line to separate the footer from the content */
+  color: #6c757d; /* A soft, dark gray color for the text, providing contrast and readability */
+}
+
+.footer p {
+  margin-bottom: 0; /* Remove default paragraph margin to keep things tight */
+  font-size: 1rem; /* Standard font size for legibility */
+}

@@ -146,6 +146,11 @@ const SJFPage: React.FC = () => {
       <div className="row justify-content-center">
         <div className="col-lg-8">
           <h2 className="text-center mb-4">Shortest Job First (SJF)</h2>
+          <div className="alert alert-info" role="alert">
+          <p className="text-justify mb-0">
+            The Shortest Job First (SJF) scheduling algorithm is a popular method used in operating system process scheduling. It operates on a simple principle: the process with the shortest execution time is selected for execution next. SJF can significantly reduce the average waiting time compared to other scheduling methods, such as FCFS. However, it can lead to starvation of longer processes if short processes keep arriving. This simulation provides a visual representation of how the SJF algorithm schedules and executes jobs, offering insights into its efficiency and potential drawbacks.
+          </p>
+        </div>
           <JobTable onSubmit={handleSubmit} />
           {jobResults.length > 0 && (
             <>

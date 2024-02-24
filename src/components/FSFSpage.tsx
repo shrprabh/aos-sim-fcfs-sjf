@@ -137,6 +137,11 @@ const FCFSPage: React.FC = () => {
       <div className="row justify-content-center">
         <div className="col-md-8">
           <h2 className="text-center">First Come First Serve (FCFS)</h2>
+          <div className="alert alert-info" role="alert">
+          <p className="text-justify mb-0">
+            The First Come, First Served (FCFS) scheduling algorithm is one of the simplest types of job scheduling. Jobs are executed on a first-come, first-served basis, making it straightforward but not always optimal for time-sensitive tasks. This simulation allows you to visualize how the FCFS algorithm assigns and executes jobs based on their arrival times.
+          </p>
+          </div>
           <JobTable onSubmit={handleSubmit} />
           {jobResults.length > 0 && (
             <>
