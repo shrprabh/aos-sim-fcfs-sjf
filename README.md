@@ -1,3 +1,5 @@
+# Live Demo: [https://shrprabh.github.io/aos-sim-fcfs-sjf/#/fcfs]
+
 # Screenshots
 <img width="1347" height="1311" alt="image" src="https://github.com/user-attachments/assets/bd78ae60-eb38-401b-84c5-ddfa826e3eee" />
 
